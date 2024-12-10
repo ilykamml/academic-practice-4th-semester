@@ -28,7 +28,7 @@ class RSSSource:
     
     def filter_new_entries(self, entries: list) -> list:
         new_entries = []
-        now = datetime.now()
+        now = datetime.datetime.now()
         cutoff_time = now - datetime.timedelta(days=7)
         self.processed_entries = {
             entry_id: time for entry_id, time in self.processed_entries.items()
@@ -38,7 +38,7 @@ class RSSSource:
             entry_id = entry.get('id')
             if entry_id not in self.processed_entries:
                 new_entries.append(entry)
-                self.processed_entries[entry_id] = datetime.now()
+                self.processed_entries[entry_id] = datetime.datetime.now()
         return new_entries
 
     def __str__(self):

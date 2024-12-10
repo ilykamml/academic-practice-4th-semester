@@ -36,24 +36,32 @@ def send_welcome(message: Message):
 
 @bot.message_handler(commands=['unsubscribe'])
 def unsubscribe(message: Message):
-    if users.get_user(message.from_user.id).del_sub(message.text.split(maxsplit=1)[1]):
-        bot.reply_to(message, f'Теперь вы отписаны от этого потока')
-    else: 
-        bot.reply_to(message, f'Кажется вы не подписаны на этот поток')
+    if len(message.text.split()) < 2:
+        bot.reply_to(message, f'Использование - /unsubscrbe <url>')
+    else:
+        link = links.get_source(message.text.split(maxsplit=1)[1])
+        if users.get_user(message.from_user.id).del_sub(link):
+            if len(link.subscribers) == 0:
+                links.remove_source(link.url)
+            bot.reply_to(message, f'Теперь вы отписаны от этого потока')
+        else: 
+            print(message.text.split(maxsplit=1)[1])
+            bot.reply_to(message, f'Кажется вы не подписаны на этот поток')
+        save_data('data.pkl')
 
 @bot.message_handler(commands=['myfeeds'])
 def get_list(message: Message):
     result = 'Вот ваши подписки:\n'
     for i, sub in enumerate(users.get_user(message.from_user.id).subscribes):
-        result += f'{i+1}. {sub}\n'
+        result += f'{i+1}. {sub.url}\n'
     bot.reply_to(message, result)
 
 @bot.message_handler(commands=['feedback'])
 def pull_feedback(message: Message):
-    if message.text.__len__ < 10:
+    if len(message.text) < 10:
         bot.reply_to(message, f'Использование:\n/feedback <ваш отзыв>')
     else:
-        feedback_text = message.text.split(maxsplit=1)
+        feedback_text = message.text.split(maxsplit=1)[1]
         bot.reply_to(message, 'Спасибо за отзыв!')
         bot.send_message(ADMINID, f'Пришёл фидбэк от пользователя @{message.from_user.username}\n\n"{feedback_text}"')
 
@@ -96,9 +104,8 @@ def check_feeds():
                     for entry in new_entries:
                         title = entry.title
                         link = entry.link
-                        description = entry.description[:400]
                         image = entry.media_content[0]['url'] if 'media_content' in entry else None
-                        message_text = f"<b>{title}</b>\n\n{description}... <a href='{link}'>Читать далее</a>"
+                        message_text = f"<b>{title}</b>\n<a href='{link}'>Читать далее</a>"
                         for user in source.subscribers:
                             if image:
                                 bot.send_photo(chat_id=user.id, photo=image, caption=message_text, parse_mode='HTML')
