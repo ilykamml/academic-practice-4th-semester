@@ -14,10 +14,12 @@ class User:
         rss.add_subscriber(self)
         self.subscribes.add(rss)
 
-    def del_sub(self, rss: "RSSSource"):
+    def del_sub(self, rss: "RSSSource") -> bool:
         if rss in self.subscribes:
             self.subscribes.discard(rss)
             rss.remove_subscriber(self)
+            return True
+        return False
     
     def __str__(self):
         st = f'\n---\n{self.username}\n{self.id}'

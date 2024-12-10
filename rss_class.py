@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING
+import datetime
+from typing import TYPE_CHECKING, List, Set
+import feedparser
 
 if TYPE_CHECKING:
     from user_class import User
@@ -8,14 +10,36 @@ class RSSSource:
 
     def __init__(self, url: str):
         self.url = url
-        self.last_entries = []
+        self.last_entry = None
         self.subscribers = set()
+        self.processed_entries = self.processed_entries = {}
 
     def add_subscriber(self, user: "User"):
         self.subscribers.add(user)
 
     def remove_subscriber(self, user: "User"):
         self.subscribers.discard(user)
+
+    def fetch_entries(self) -> list:
+        feed = feedparser.parse(self.url)
+        if feed.bozo:
+            return []
+        return feed.entries
+    
+    def filter_new_entries(self, entries: list) -> list:
+        new_entries = []
+        now = datetime.now()
+        cutoff_time = now - datetime.timedelta(days=7)
+        self.processed_entries = {
+            entry_id: time for entry_id, time in self.processed_entries.items()
+            if time > cutoff_time
+        }
+        for entry in entries:
+            entry_id = entry.get('id')
+            if entry_id not in self.processed_entries:
+                new_entries.append(entry)
+                self.processed_entries[entry_id] = datetime.now()
+        return new_entries
 
     def __str__(self):
         st = f'\n---\n{self.url}'
@@ -35,6 +59,9 @@ class RSSManager:
 
     def get_source(self, url: str) -> RSSSource | None: 
         return self.sources.get(url)
+    
+    def get_sources(self) -> List[RSSSource]:
+        return self.sources.values()
     
     def remove_source(self, url: str):
         if self.link_exists(url):
