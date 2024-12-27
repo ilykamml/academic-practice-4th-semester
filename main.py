@@ -47,7 +47,7 @@ def send_welcome(message: Message):
 @bot.message_handler(commands=['unsubscribe'])
 def unsubscribe(message: Message):
     if len(message.text.split()) < 2:
-        bot.reply_to(message, f'Использование - /unsubscrbe <url>')
+        bot.reply_to(message, f'Использование - /unsubscribe <url>')
     else:
         link = links.get_source(message.text.split(maxsplit=1)[1])
         if users.get_user(message.from_user.id).del_sub(link):
@@ -90,7 +90,7 @@ def debug_info(message: Message):
 
 @bot.message_handler(func=lambda message: True)
 def add_rss_feed(message: Message):
-    id, username, url = message.from_user.id, message.from_user.username, message.text
+    id, username, url = message.chat.id, message.from_user.username, message.text
     # добавляем пользователя в список (если пользователь есть - данные не перезапишутся)
     users.add_user(id, username)
     # добавляем rss-канал в список (если канал есть - данные не перезапишутся)
