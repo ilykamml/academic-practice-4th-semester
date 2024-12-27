@@ -108,13 +108,13 @@ def check_feeds():
                     for entry in new_entries:
                         title = entry.title
                         link = entry.link
-                        image = entry.media_content[0]['url'] if 'media_content' in entry else None
+                        # image = entry.media_content[0]['url'] if 'media_content' in entry else None
                         message_text = f"<b>{title}</b>\n<a href='{link}'>Читать далее</a>"
                         for user in source.subscribers:
-                            if image:
-                                bot.send_photo(chat_id=user.id, photo=image, caption=message_text, parse_mode='HTML')
-                            else:
-                                bot.send_message(chat_id=user.id, text=message_text, parse_mode='HTML')
+                            # if image:
+                            #     bot.send_photo(chat_id=user.id, photo=image, caption=message_text, parse_mode='HTML')
+                            # else:
+                            bot.send_message(chat_id=user.id, text=message_text, parse_mode='HTML')
                     save_data('data.pkl')
 
         time.sleep(30)
