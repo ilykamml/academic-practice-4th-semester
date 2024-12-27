@@ -1,4 +1,4 @@
-import telebot, feedparser, time
+import telebot, time
 from telebot.types import Message
 from threading import Thread
 from user_class import *
@@ -15,6 +15,7 @@ with open('ADMINID', 'r') as file:
     ADMINID = int(file.read().strip())
 
 stop_event = Event()
+dont_stop_while = True
 
 threads = []
 
@@ -28,6 +29,15 @@ if exists('data.pkl'):
 else:
     users = UserManager()
     links = RSSManager()
+
+def shutdown_bot():
+    global dont_stop_while
+    dont_stop_while = False
+    stop_threads()
+    save_data('data.pkl')
+    bot.stop_polling()
+    bot.stop_bot()
+    exit(0)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message: Message):
@@ -74,13 +84,7 @@ def debug_info(message: Message):
             bot.reply_to(message, f'USERS:\n{users}\n\n\nCHANNELS:\n{links}')
         elif command == '/off':
             bot.reply_to(message, 'Выключение...')
-
-            stop_threads()
-            save_data('data.pkl')
-
-            bot.stop_polling()
-            bot.stop_bot()
-            exit(0)
+            shutdown_bot()
 
 
 
@@ -121,20 +125,33 @@ def save_data(file):
 
 def stop_threads():
     stop_event.set()
-
     for thread in threads:
         thread.join
 
+def start_threads():
+    new_thread = Thread(target=check_feeds)
+    new_thread.start()
+    threads.append(new_thread)
+
 if __name__ == '__main__':
 
-    thread = Thread(target=check_feeds)
-    thread.start()
-    threads.append(thread)
+    retry_delay = 15
+    try:
+        start_threads()
+        retry_delay = 15
+    except Exception as e:
+        print(f'Error: {e}')
+        stop_threads()
+        time.sleep(retry_delay)
+        retry_delay = min(retry_delay * 2, 960)
+        start_threads()
 
 
-    while True:
+    while dont_stop_while:
         try:
             bot.polling(timeout=30, long_polling_timeout=30)
+            retry_delay = 15  # Reset delay after a successful polling
         except Exception as e:
             print(f"Error: {e}")
-            time.sleep(15) # ждём перед следующей попыткой
+            time.sleep(retry_delay)  # ждём перед следующей попыткой
+            retry_delay = min(retry_delay * 2, 960)  # Exponential backoff with a max delay of 16 minutes (960 seconds)
